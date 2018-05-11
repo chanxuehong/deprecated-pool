@@ -72,7 +72,8 @@ func BenchmarkBytesBufferPool_Get_Put_Parallel(b *testing.B) {
 	b.SetParallelism(64)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			pool.Put(pool.Get())
+			x := pool.Get()
+			pool.Put(x)
 		}
 	})
 }
@@ -89,7 +90,46 @@ func BenchmarkSyncPool_Get_Put_Parallel(b *testing.B) {
 	b.SetParallelism(64)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			pool.Put(pool.Get())
+			x := pool.Get().(*bytes.Buffer)
+			pool.Put(x)
+		}
+	})
+}
+
+func BenchmarkBytesBufferPool_Get_Put_Parallel2(b *testing.B) {
+	_new := func() *bytes.Buffer {
+		return bytes.NewBuffer(make([]byte, 128))
+	}
+	pool := NewBytesBufferPool(1024, _new)
+
+	b.ReportAllocs()
+	b.SetParallelism(64)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			x1 := pool.Get()
+			x2 := pool.Get()
+			pool.Put(x2)
+			pool.Put(x1)
+		}
+	})
+}
+
+func BenchmarkSyncPool_Get_Put_Parallel2(b *testing.B) {
+	_new := func() interface{} {
+		return bytes.NewBuffer(make([]byte, 128))
+	}
+	pool := sync.Pool{
+		New: _new,
+	}
+
+	b.ReportAllocs()
+	b.SetParallelism(64)
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			x1 := pool.Get().(*bytes.Buffer)
+			x2 := pool.Get().(*bytes.Buffer)
+			pool.Put(x2)
+			pool.Put(x1)
 		}
 	})
 }

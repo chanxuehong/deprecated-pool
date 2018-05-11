@@ -49,8 +49,8 @@ func (p *BytesBufferPool) Get() (x *bytes.Buffer) {
 	buf := p.buf
 	p.mu.Lock()
 	if pointer := p.pointer - 1; pointer >= 0 && pointer < len(buf) {
-		p.pointer--
-		x = buf[p.pointer]
+		p.pointer = pointer
+		x = buf[pointer]
 		p.mu.Unlock()
 		return
 	}
