@@ -5,18 +5,18 @@ import (
 	"sync"
 )
 
-func NewBytesBufferPool(size int, _new func() *bytes.Buffer) *BytesBufferPool {
+func NewBytesBufferPool(size int, new func() *bytes.Buffer) *BytesBufferPool {
 	if size <= 0 {
 		panic("size must be greater than 0")
 	}
-	if _new == nil {
-		panic("_new cannot be nil")
+	if new == nil {
+		panic("function new cannot be nil")
 	}
 	return &BytesBufferPool{
 		pointer: 0,
 		buf:     make([]*bytes.Buffer, size),
 		pool: sync.Pool{
-			New: func() interface{} { return _new() },
+			New: func() interface{} { return new() },
 		},
 	}
 }
@@ -51,6 +51,7 @@ func (p *BytesBufferPool) Get() (x *bytes.Buffer) {
 	if pointer := p.pointer - 1; pointer >= 0 && pointer < len(buf) {
 		p.pointer = pointer
 		x = buf[pointer]
+		buf[pointer] = nil
 		p.mu.Unlock()
 		return
 	}

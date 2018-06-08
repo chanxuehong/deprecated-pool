@@ -6,11 +6,12 @@ import (
 	"testing"
 )
 
-func BenchmarkBytesBufferPool_Get(b *testing.B) {
-	_new := func() *bytes.Buffer {
-		return bytes.NewBuffer([]byte{})
+func BenchmarkBytesBufferPool_GetFromEmptyPool(b *testing.B) {
+	var buffer *bytes.Buffer = bytes.NewBuffer([]byte{})
+	new := func() *bytes.Buffer {
+		return buffer
 	}
-	pool := NewBytesBufferPool(10, _new)
+	pool := NewBytesBufferPool(10, new)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -19,12 +20,13 @@ func BenchmarkBytesBufferPool_Get(b *testing.B) {
 	}
 }
 
-func BenchmarkSyncPool_Get(b *testing.B) {
-	_new := func() interface{} {
-		return bytes.NewBuffer([]byte{})
+func BenchmarkSyncPool_GetFromEmptyPool(b *testing.B) {
+	var buffer interface{} = bytes.NewBuffer([]byte{})
+	new := func() interface{} {
+		return buffer
 	}
 	pool := sync.Pool{
-		New: _new,
+		New: new,
 	}
 
 	b.ReportAllocs()
@@ -34,11 +36,12 @@ func BenchmarkSyncPool_Get(b *testing.B) {
 	}
 }
 
-func BenchmarkBytesBufferPool_Get_Put(b *testing.B) {
-	_new := func() *bytes.Buffer {
-		return bytes.NewBuffer(make([]byte, 128))
+func BenchmarkBytesBufferPool_Get_Put_Serial(b *testing.B) {
+	var buffer *bytes.Buffer = bytes.NewBuffer([]byte{})
+	new := func() *bytes.Buffer {
+		return buffer
 	}
-	pool := NewBytesBufferPool(10, _new)
+	pool := NewBytesBufferPool(10, new)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -47,12 +50,13 @@ func BenchmarkBytesBufferPool_Get_Put(b *testing.B) {
 	}
 }
 
-func BenchmarkSyncPool_Get_Put(b *testing.B) {
-	_new := func() interface{} {
-		return bytes.NewBuffer(make([]byte, 128))
+func BenchmarkSyncPool_Get_Put_Serial(b *testing.B) {
+	var buffer interface{} = bytes.NewBuffer([]byte{})
+	new := func() interface{} {
+		return buffer
 	}
 	pool := sync.Pool{
-		New: _new,
+		New: new,
 	}
 
 	b.ReportAllocs()
@@ -63,10 +67,11 @@ func BenchmarkSyncPool_Get_Put(b *testing.B) {
 }
 
 func BenchmarkBytesBufferPool_Get_Put_Parallel(b *testing.B) {
-	_new := func() *bytes.Buffer {
-		return bytes.NewBuffer(make([]byte, 128))
+	var buffer *bytes.Buffer = bytes.NewBuffer([]byte{})
+	new := func() *bytes.Buffer {
+		return buffer
 	}
-	pool := NewBytesBufferPool(1024, _new)
+	pool := NewBytesBufferPool(1024, new)
 
 	b.ReportAllocs()
 	b.SetParallelism(64)
@@ -79,57 +84,20 @@ func BenchmarkBytesBufferPool_Get_Put_Parallel(b *testing.B) {
 }
 
 func BenchmarkSyncPool_Get_Put_Parallel(b *testing.B) {
-	_new := func() interface{} {
-		return bytes.NewBuffer(make([]byte, 128))
+	var buffer interface{} = bytes.NewBuffer([]byte{})
+	new := func() interface{} {
+		return buffer
 	}
 	pool := sync.Pool{
-		New: _new,
+		New: new,
 	}
 
 	b.ReportAllocs()
 	b.SetParallelism(64)
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			x := pool.Get().(*bytes.Buffer)
+			x := pool.Get()
 			pool.Put(x)
-		}
-	})
-}
-
-func BenchmarkBytesBufferPool_Get_Put_Parallel2(b *testing.B) {
-	_new := func() *bytes.Buffer {
-		return bytes.NewBuffer(make([]byte, 128))
-	}
-	pool := NewBytesBufferPool(1024, _new)
-
-	b.ReportAllocs()
-	b.SetParallelism(64)
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			x1 := pool.Get()
-			x2 := pool.Get()
-			pool.Put(x2)
-			pool.Put(x1)
-		}
-	})
-}
-
-func BenchmarkSyncPool_Get_Put_Parallel2(b *testing.B) {
-	_new := func() interface{} {
-		return bytes.NewBuffer(make([]byte, 128))
-	}
-	pool := sync.Pool{
-		New: _new,
-	}
-
-	b.ReportAllocs()
-	b.SetParallelism(64)
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			x1 := pool.Get().(*bytes.Buffer)
-			x2 := pool.Get().(*bytes.Buffer)
-			pool.Put(x2)
-			pool.Put(x1)
 		}
 	})
 }
